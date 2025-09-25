@@ -1,0 +1,62 @@
+services:
+  mariadb:
+    image: mariadb:latest
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-root}
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-dolidb}
+      MYSQL_USER: ${MYSQL_USER:-dolidbuser}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-dolidbpass}
+    volumes:
+      - ./dolibarr_mariadb:/var/lib/mysql
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+
+  web:
+    image: dolibarr/dolibarr:latest
+    environment:
+      DOLI_INIT_DEMO: ${DOLI_INIT_DEMO:-0}
+      DOLI_DB_HOST: ${DOLI_DB_HOST:-mariadb}
+      DOLI_DB_NAME: ${DOLI_DB_NAME:-dolidb}
+      DOLI_DB_USER: ${DOLI_DB_USER:-dolidbuser}
+      DOLI_DB_PASSWORD: ${DOLI_DB_PASSWORD:-dolidbpass}
+      DOLI_URL_ROOT: "${DOLI_URL_ROOT:-http://0.0.0.0}"
+      DOLI_ADMIN_LOGIN: "${DOLI_ADMIN_LOGIN:-admin}"
+      DOLI_ADMIN_PASSWORD: "${DOLI_ADMIN_PASSWORD:-admin}"
+      DOLI_CRON: ${DOLI_CRON:-0}
+      DOLI_CRON_KEY: ${DOLI_CRON_KEY:-mycronsecurekey}
+      DOLI_COMPANY_NAME: ${DOLI_COMPANY_NAME:-MyBigCompany}
+      WWW_USER_ID: ${WWW_USER_ID:-1000}
+      WWW_GROUP_ID: ${WWW_GROUP_ID:-1000}
+    ports:
+      - "80:80"
+    depends_on:
+      - mariadb
+    volumes:
+      - ./dolibarr_documents:/var/www/documents
+      - ./dolibarr_custom:/var/www/html/custom
+
+  phpmyadmin:
+    image: phpmyadmin:latest
+    environment:
+      PMA_HOST: mariadb
+      PMA_USER: root
+      PMA_PASSWORD: ${MYSQL_ROOT_PASSWORD:-root}
+    ports:
+      - "8081:80"
+    depends_on:
+      - mariadb
+
+  wordpress:
+    image: wordpress:latest
+    environment:
+      WORDPRESS_DB_HOST: mariadb:3306
+      WORDPRESS_DB_NAME: ${WORDPRESS_DB_NAME:-wordpress}
+      WORDPRESS_DB_USER: ${WORDPRESS_DB_USER:-wordpressuser}
+      WORDPRESS_DB_PASSWORD: ${WORDPRESS_DB_PASSWORD:-wordpresspass}
+      WORDPRESS_DEBUG: "1"
+    ports:
+      - "8080:80"
+    volumes:
+      - ./wordpress:/var/www/html
+    depends_on:
+      - mariadb
+
